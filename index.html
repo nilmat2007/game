@@ -1,15 +1,222 @@
 <!DOCTYPE html>
-
-<html>
-   <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>วิวัฒน์ แซ่ฮึง(โค้ชเกมส์)</title>
-<link rel="icon" href="https://lh3.googleusercontent.com/d/1GNTsQfBXQVEPHVwSAGmu7BVX4wiRsvG5" type="image/x-icon">
-<link rel="shortcut icon" href="https://lh3.googleusercontent.com/d/1GNTsQfBXQVEPHVwSAGmu7BVX4wiRsvG5" type="image/x-icon">
-<link rel="icon" href="https://https://lh3.googleusercontent.com/d/1GNTsQfBXQVEPHVwSAGmu7BVX4wiRsvG5" type="image/png">
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE Bot Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
 </head>
-   <body>
-      <iframe style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;border: 0;" src="https://script.google.com/macros/s/AKfycbzEpuLoObouuSTdFbuq-zeuUaZvl4_XSv5w7lVQWhaGV4yo616J7NrxxJv4HKhkvIbc/exec"></iframe>
-   </body>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-6">LINE Bot Admin</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- User Info Section -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">ข้อมูลผู้ใช้ล่าสุด</h2>
+                <div id="userInfo" class="space-y-2">
+                    <!-- User info will be populated here -->
+                </div>
+            </div>
+
+            <!-- Message Stats Section -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">สถิติข้อความ</h2>
+                <div id="messageStats" class="space-y-2">
+                    <!-- Message stats will be populated here -->
+                </div>
+            </div>
+
+            <!-- Message Broadcasting Section -->
+            <div class="bg-white p-6 rounded-lg shadow-md col-span-1 md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4">ส่งข้อความ</h2>
+                <form id="broadcastForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ผู้รับ</label>
+                        <div id="recipients" class="mt-2 space-y-2">
+                            <!-- Recipients will be populated here -->
+                        </div>
+                    </div>
+                    <div>
+                        <label for="messageType" class="block text-sm font-medium text-gray-700">ประเภทข้อความ</label>
+                        <select id="messageType" name="messageType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="text">ข้อความ</option>
+                            <option value="image">รูปภาพ</option>
+                            <option value="flex">Flex Message</option>
+                        </select>
+                    </div>
+                    <div id="messageContentContainer">
+                        <label for="messageContent" class="block text-sm font-medium text-gray-700">เนื้อหาข้อความ</label>
+                        <textarea id="messageContent" name="messageContent" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"></textarea>
+                    </div>
+                    <div>
+                        <label for="commandSelect" class="block text-sm font-medium text-gray-700">เลือกคำสั่งที่มีอยู่</label>
+                        <select id="commandSelect" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">-- เลือกคำสั่ง --</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        ส่งข้อความ
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Apps Script Web App URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAkJOhSo0-c0FvBiFtE19llSrdYM0b-k7vakKTvn0B6GbeYCUqUxAkbhU_hVjUnb4r/exec';
+
+        // Fetch data from Google Apps Script
+        async function fetchFromScript(functionName, params = {}) {
+            const url = new URL(SCRIPT_URL);
+            url.searchParams.append('function', functionName);
+            Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+
+            try {
+                const response = await fetch(url.toString());
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error('Error:', error);
+                return null;
+            }
+        }
+
+        // Fetch and display user info
+        async function fetchUserInfo() {
+            const userInfo = await fetchFromScript('getLatestUserInfo');
+            if (userInfo) {
+                const userInfoElement = document.getElementById('userInfo');
+                userInfoElement.innerHTML = `
+                    <p><strong>User ID:</strong> ${userInfo.userId}</p>
+                    <p><strong>Display Name:</strong> ${userInfo.displayName}</p>
+                    <p><strong>Last Active:</strong> ${new Date(userInfo.timestamp).toLocaleString()}</p>
+                    ${userInfo.pictureUrl ? `<img src="${userInfo.pictureUrl}" alt="Profile Picture" class="w-24 h-24 rounded-full mt-2">` : ''}
+                `;
+            }
+        }
+
+        // Fetch and display message stats
+        async function fetchMessageStats() {
+            const stats = await fetchFromScript('getMessageStats');
+            if (stats) {
+                const statsElement = document.getElementById('messageStats');
+                statsElement.innerHTML = `
+                    <p><strong>Total Messages:</strong> ${stats.total}</p>
+                    <p><strong>Text Messages:</strong> ${stats.text}</p>
+                    <p><strong>Image Messages:</strong> ${stats.image}</p>
+                    <p><strong>Sticker Messages:</strong> ${stats.sticker}</p>
+                    <p><strong>Other Messages:</strong> ${stats.other}</p>
+                `;
+            }
+        }
+
+        // Fetch and display all users and groups
+        async function fetchUsersAndGroups() {
+            const data = await fetchFromScript('getAllUsersAndGroups');
+            if (data) {
+                const recipientsElement = document.getElementById('recipients');
+                let html = '<div class="space-y-2">';
+                html += '<h3 class="font-medium">ผู้ใช้:</h3>';
+                data.users.forEach(user => {
+                    html += `<label class="inline-flex items-center">
+                        <input type="checkbox" class="form-checkbox" name="recipient" value="${user.id}">
+                        <span class="ml-2">${user.name}</span>
+                    </label><br>`;
+                });
+                html += '</div><div class="space-y-2 mt-4">';
+                html += '<h3 class="font-medium">กลุ่ม:</h3>';
+                data.groups.forEach(group => {
+                    html += `<label class="inline-flex items-center">
+                        <input type="checkbox" class="form-checkbox" name="recipient" value="${group.id}">
+                        <span class="ml-2">${group.name}</span>
+                    </label><br>`;
+                });
+                html += '</div>';
+                recipientsElement.innerHTML = html;
+            }
+        }
+
+        // Fetch and populate commands
+        async function fetchCommands() {
+            const commands = await fetchFromScript('getAllCommands');
+            if (commands) {
+                const selectElement = document.getElementById('commandSelect');
+                commands.forEach(command => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify(command);
+                    option.textContent = command.command;
+                    selectElement.appendChild(option);
+                });
+            }
+        }
+
+        // Handle command selection
+        document.getElementById('commandSelect').addEventListener('change', function(e) {
+            const selectedCommand = JSON.parse(e.target.value);
+            if (selectedCommand) {
+                document.getElementById('messageContent').value = selectedCommand.response;
+            }
+        });
+
+        // Handle message type change
+        document.getElementById('messageType').addEventListener('change', function(e) {
+            const contentContainer = document.getElementById('messageContentContainer');
+            const label = contentContainer.querySelector('label');
+            const input = document.getElementById('messageContent');
+            
+            switch (e.target.value) {
+                case 'text':
+                    label.textContent = 'เนื้อหาข้อความ';
+                    input.setAttribute('placeholder', 'ใส่ข้อความที่นี่');
+                    break;
+                case 'image':
+                    label.textContent = 'URL รูปภาพ';
+                    input.setAttribute('placeholder', 'ใส่ URL รูปภาพที่นี่');
+                    break;
+                case 'flex':
+                    label.textContent = 'Flex Message JSON';
+                    input.setAttribute('placeholder', 'ใส่ Flex Message JSON ที่นี่');
+                    break;
+            }
+        });
+
+        // Handle form submission for broadcasting messages
+        document.getElementById('broadcastForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const recipients = Array.from(document.querySelectorAll('input[name="recipient"]:checked'))
+                .map(input => input.value);
+            const messageType = document.getElementById('messageType').value;
+            const messageContent = document.getElementById('messageContent').value;
+            
+            if (recipients.length === 0) {
+                alert('กรุณาเลือกผู้รับอย่างน้อยหนึ่งคน');
+                return;
+            }
+            
+            const result = await fetchFromScript('sendMessages', {
+                recipients: JSON.stringify(recipients),
+                messageType,
+                messageContent
+            });
+
+            if (result) {
+                if (result.success) {
+                    alert('ส่งข้อความเรียบร้อยแล้ว!');
+                    document.getElementById('broadcastForm').reset();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + result.message);
+                }
+            }
+        });
+
+        // Initial data fetch
+        fetchUserInfo();
+        fetchMessageStats();
+        fetchUsersAndGroups();
+        fetchCommands();
+    </script>
+</body>
 </html>
